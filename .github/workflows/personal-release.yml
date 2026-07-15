@@ -165,7 +165,7 @@ jobs:
           - build: 'arm64'
             os: ubuntu-24.04-arm
           - build: 's390x'
-            os: ubuntu-24.04-s390x
+            os: ubuntu-24.04
 
     runs-on: ${{ matrix.os }}
 
@@ -189,12 +189,22 @@ jobs:
 
       - name: Dependencies
         id: depends
+        env:
+          TARGET_ARCH: ${{ matrix.build }}
         run: |
           sudo apt-get update
-          sudo apt-get install build-essential libssl-dev
+          if [[ "$TARGET_ARCH" == "s390x" ]]; then
+            sudo apt-get install -y --no-install-recommends \
+              build-essential \
+              gcc-s390x-linux-gnu \
+              g++-s390x-linux-gnu \
+              qemu-user-static
+          else
+            sudo apt-get install -y --no-install-recommends build-essential libssl-dev
+          fi
 
       - name: Toolchain workaround (GCC 14)
-        if: ${{ contains(matrix.os, 'ubuntu-24.04') }}
+        if: ${{ contains(matrix.os, 'ubuntu-24.04') && matrix.build != 's390x' }}
         run: |
           sudo apt-get install -y gcc-14 g++-14
           echo "CC=gcc-14" >> "$GITHUB_ENV"
@@ -208,8 +218,28 @@ jobs:
 
       - name: Build
         id: cmake_build
+        env:
+          TARGET_ARCH: ${{ matrix.build }}
         run: |
+          cross_args=()
+          if [[ "$TARGET_ARCH" == "s390x" ]]; then
+            cross_args=(
+              -DCMAKE_SYSTEM_NAME=Linux
+              -DCMAKE_SYSTEM_PROCESSOR=s390x
+              -DCMAKE_C_COMPILER=s390x-linux-gnu-gcc
+              -DCMAKE_CXX_COMPILER=s390x-linux-gnu-g++
+              -DCMAKE_FIND_ROOT_PATH=/usr/s390x-linux-gnu
+              -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER
+              -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY
+              -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY
+              -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY
+              -DHOST_CXX_COMPILER=/usr/bin/g++
+              -DLLAMA_OPENSSL=OFF
+            )
+          fi
+
           cmake -B build \
+            "${cross_args[@]}" \
             -DCMAKE_INSTALL_RPATH='$ORIGIN' \
             -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
             -DGGML_BACKEND_DL=ON \
@@ -219,6 +249,10 @@ jobs:
             -DHF_UI_VERSION=${{ needs.get-version.outputs.ui_version }} \
             ${{ env.CMAKE_ARGS }}
           cmake --build build --config Release -j $(nproc)
+
+      - name: Smoke test s390x binary
+        if: ${{ matrix.build == 's390x' }}
+        run: qemu-s390x-static -L /usr/s390x-linux-gnu ./build/bin/llama-cli --version
 
       - name: ccache-clear
         if: ${{ matrix.build != 's390x' }}
