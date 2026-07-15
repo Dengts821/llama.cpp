@@ -586,6 +586,10 @@ jobs:
 
     runs-on: windows-2022
 
+    permissions:
+      contents: read
+      actions: write
+
     outputs:
       openvino_version: ${{ steps.openvino_version.outputs.value }}
 
@@ -973,6 +977,10 @@ jobs:
 
     runs-on: windows-2022
 
+    permissions:
+      contents: read
+      actions: write
+
     defaults:
       run:
         shell: bash
@@ -1091,6 +1099,10 @@ jobs:
             fp16: ON
 
     runs-on: ubuntu-24.04
+
+    permissions:
+      contents: read
+      actions: write
 
     env:
       ONEAPI_ROOT: /opt/intel/oneapi/
