@@ -58,6 +58,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends build-essential libssl-dev
 
+      - name: Toolchain workaround (GCC 14)
+        if: ${{ contains(matrix.runner, 'ubuntu-24.04') }}
+        run: |
+          sudo apt-get install -y gcc-14 g++-14
+          echo "CC=gcc-14" >> "$GITHUB_ENV"
+          echo "CXX=g++-14" >> "$GITHUB_ENV"
+
       - name: Configure
         run: |
           cmake -S . -B build \
@@ -69,6 +76,8 @@ jobs:
             -DLLAMA_BUILD_TESTS=OFF \
             -DLLAMA_BUILD_EXAMPLES=OFF \
             -DLLAMA_BUILD_SERVER=ON \
+            -DLLAMA_BUILD_UI=OFF \
+            -DLLAMA_USE_PREBUILT_UI=OFF \
             -DLLAMA_BUILD_TOOLS=ON
 
       - name: Build
@@ -116,6 +125,8 @@ jobs:
             -DLLAMA_BUILD_TESTS=OFF \
             -DLLAMA_BUILD_EXAMPLES=OFF \
             -DLLAMA_BUILD_SERVER=ON \
+            -DLLAMA_BUILD_UI=OFF \
+            -DLLAMA_USE_PREBUILT_UI=OFF \
             -DLLAMA_BUILD_TOOLS=ON
 
       - name: Build
@@ -153,6 +164,8 @@ jobs:
           -DLLAMA_BUILD_TESTS=OFF
           -DLLAMA_BUILD_EXAMPLES=OFF
           -DLLAMA_BUILD_SERVER=ON
+          -DLLAMA_BUILD_UI=OFF
+          -DLLAMA_USE_PREBUILT_UI=OFF
           -DLLAMA_BUILD_TOOLS=ON
 
       - name: Build
@@ -202,6 +215,8 @@ jobs:
             -DLLAMA_BUILD_TESTS=OFF ^
             -DLLAMA_BUILD_EXAMPLES=OFF ^
             -DLLAMA_BUILD_SERVER=ON ^
+            -DLLAMA_BUILD_UI=OFF ^
+            -DLLAMA_USE_PREBUILT_UI=OFF ^
             -DLLAMA_BUILD_TOOLS=ON
           cmake --build build --config Release
 
@@ -254,6 +269,8 @@ jobs:
             -DLLAMA_BUILD_TESTS=OFF \
             -DLLAMA_BUILD_EXAMPLES=OFF \
             -DLLAMA_BUILD_SERVER=ON \
+            -DLLAMA_BUILD_UI=OFF \
+            -DLLAMA_USE_PREBUILT_UI=OFF \
             -DLLAMA_BUILD_TOOLS=ON
 
       - name: Build
