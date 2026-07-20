@@ -277,6 +277,76 @@ jobs:
           path: llama-${{ steps.tag.outputs.name }}-bin-ubuntu-${{ matrix.build }}.tar.gz
           name: llama-bin-ubuntu-${{ matrix.build }}.tar.gz
 
+  linux-cuda-arm64:
+    needs: [check-release, get-version]
+    if: ${{ needs.check-release.outputs.should_release == 'true' }}
+    runs-on: ubuntu-24.04-arm
+
+    container:
+      image: docker.io/nvidia/cuda:13.3.0-devel-ubuntu24.04
+
+    permissions:
+      contents: read
+
+    env:
+      CC: gcc-14
+      CXX: g++-14
+      CUDAHOSTCXX: g++-14
+
+    steps:
+      - name: Clone
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential \
+            cmake \
+            gcc-14 \
+            g++-14 \
+            git \
+            libgomp1 \
+            libssl-dev \
+            ninja-build
+
+      - name: Build
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_RPATH='$ORIGIN' \
+            -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+            -DCMAKE_CUDA_ARCHITECTURES='75;80;86;87;89;120;121' \
+            -DGGML_BACKEND_DL=ON \
+            -DGGML_CPU_ALL_VARIANTS=ON \
+            -DGGML_CUDA=ON \
+            -DGGML_NATIVE=OFF \
+            -DLLAMA_BUILD_UI=OFF \
+            -DLLAMA_CURL=OFF \
+            -DLLAMA_USE_PREBUILT_UI=OFF \
+            ${{ env.CMAKE_ARGS }}
+          cmake --build build --config Release -j "$(nproc)"
+
+      - name: Smoke test
+        run: ./build/bin/llama-server --version
+
+      - name: Pack artifacts
+        env:
+          PACKAGE_VERSION: ${{ needs.get-version.outputs.ui_version }}
+        run: |
+          cp LICENSE ./build/bin/
+          tar -czvf "llama-${PACKAGE_VERSION}-bin-linux-cuda-13-common_cpus-arm64.tar.gz" \
+            --transform "s,^\.,llama-${PACKAGE_VERSION}," \
+            -C ./build/bin .
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          path: llama-${{ needs.get-version.outputs.ui_version }}-bin-linux-cuda-13-common_cpus-arm64.tar.gz
+          name: llama-bin-linux-cuda-13-common_cpus-arm64.tar.gz
+
   ubuntu-vulkan:
     needs: [check-release, get-version]
     if: ${{ needs.check-release.outputs.should_release == 'true' }}
@@ -1606,6 +1676,7 @@ jobs:
       - windows-openvino
       - ubuntu-22-rocm
       - ubuntu-cpu
+      - linux-cuda-arm64
       - ubuntu-vulkan
       - ubuntu-24-openvino
       - ubuntu-24-sycl
@@ -1672,8 +1743,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mapfile -t files < <(find release -maxdepth 1 -type f \( -name '*.zip' -o -name '*.tar.gz' \) -print | sort)
-          if [[ ${#files[@]} -ne 25 ]]; then
-            echo "Expected 25 release files, found ${#files[@]}"
+          if [[ ${#files[@]} -ne 26 ]]; then
+            echo "Expected 26 release files, found ${#files[@]}"
             printf '%s\n' "${files[@]}"
             exit 1
           fi
