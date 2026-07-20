@@ -318,6 +318,8 @@ jobs:
       contents: read
 
     env:
+      DEBIAN_FRONTEND: noninteractive
+      TZ: Etc/UTC
       CC: gcc-${{ matrix.compiler }}
       CXX: g++-${{ matrix.compiler }}
       CUDAHOSTCXX: g++-${{ matrix.compiler }}
