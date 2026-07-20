@@ -284,12 +284,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - cuda: '11'
-            image: docker.io/nvidia/cuda:11.7.1-devel-ubuntu20.04
-            runner: ubuntu-24.04
-            arch: x64
-            compiler: 11
-            cuda_architectures: '75;80;86;87'
           - cuda: '12'
             image: docker.io/nvidia/cuda:12.4.1-devel-ubuntu22.04
             runner: ubuntu-24.04
@@ -1781,8 +1775,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mapfile -t files < <(find release -maxdepth 1 -type f \( -name '*.zip' -o -name '*.tar.gz' \) -print | sort)
-          if [[ ${#files[@]} -ne 28 ]]; then
-            echo "Expected 28 release files, found ${#files[@]}"
+          if [[ ${#files[@]} -ne 27 ]]; then
+            echo "Expected 27 release files, found ${#files[@]}"
             printf '%s\n' "${files[@]}"
             exit 1
           fi
