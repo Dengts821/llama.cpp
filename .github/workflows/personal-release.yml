@@ -341,14 +341,15 @@ jobs:
             git \
             libgomp1 \
             libssl-dev \
-            ninja-build
-          if [[ "${{ matrix.compiler }}" == "9" ]]; then
-            apt-get install -y --no-install-recommends python3-pip
-            python3 -m pip install --no-cache-dir cmake==3.31.6
-          fi
+            ninja-build \
+            python3-pip
+          python3 -m pip install --no-cache-dir cmake==3.31.6
 
       - name: Build
         run: |
+          export PATH="/usr/local/bin:$PATH"
+          hash -r
+          cmake --version
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_RPATH='$ORIGIN' \
