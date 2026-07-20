@@ -342,12 +342,14 @@ jobs:
             libgomp1 \
             libssl-dev \
             ninja-build \
-            python3-pip
-          python3 -m pip install --no-cache-dir cmake==3.31.6
+            python3-pip \
+            python3-venv
+          python3 -m venv /tmp/cmake-venv
+          /tmp/cmake-venv/bin/python -m pip install --no-cache-dir cmake==3.31.6
 
       - name: Build
         run: |
-          export PATH="/usr/local/bin:$PATH"
+          export PATH="/tmp/cmake-venv/bin:/usr/local/bin:$PATH"
           hash -r
           cmake --version
           cmake -S . -B build -G Ninja \
